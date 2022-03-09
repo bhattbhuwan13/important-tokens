@@ -1,26 +1,17 @@
-import json
-import os
-import sys
 from typing import Dict, List
 
-import numpy as np
-import tinysegmenter
-from sudachipy import Dictionary
-
-from src.okapi_scoring.tfidf import (
-    compute_tfidf_score,
-    compute_tfidf_vectorizer,
-    get_tfidf_stopwords,
-    get_top_tfidf_tokens,
-)
 from src.preprocess import PreprocessData
-from src.requests_es import ElasticSearch
-
-# from src.okapi_bm25 import BM25
 from src.token_scorer import BM25Scorer, TFIDFScorer, TokenScorer
 
 
 def sort_tokens_by_score(tokens_with_score: Dict):
+    """Given a dictionary containing tokens and their score,
+    sorts the token in descending order of their score
+
+    Args:
+        tokens_with_score (Dict): Dictionary containing tokens as key
+        and scores as value.
+    """
 
     sorted_token_score = sorted(
         tokens_with_score.items(), key=lambda item: item[1]
@@ -30,71 +21,74 @@ def sort_tokens_by_score(tokens_with_score: Dict):
 
 
 def compute_number_of_special_words(fraction: float, total_tokens: int):
-    return int(fraction * total_tokens)
+    """Given a percentage as fraction, computes the number of special and stop words.
+
+    Args:
+        fraction (float): fraction
+        total_tokens (int): total_tokens
+    """
+    return round(fraction * total_tokens)
 
 
-def get_special_and_stop_words(Scorer: TokenScorer, tokenized_texts):
-    scorer = Scorer(tokenized_texts=tokenized_texts)
+def get_special_and_stop_words(scorer: TokenScorer):
+    """Computes the most and least significant words.
+
+    Args:
+        scorer (TokenScorer): The algorithm used for scoring the tokens.
+    """
 
     token_scores = scorer.score_tokens()
     sorted_tokens = sort_tokens_by_score(token_scores)
     NUMBER_OF_SPECIAL_WORDS = compute_number_of_special_words(
-        0.01, len(sorted_tokens)
+        0.05, len(sorted_tokens)
     )
     important_words = sorted_tokens[-NUMBER_OF_SPECIAL_WORDS:]
     stop_words = sorted_tokens[:NUMBER_OF_SPECIAL_WORDS]
     return important_words, stop_words
 
 
-def main(content: List) -> List:
-    """Initialize model and compute the similarities among the docs.
+def main(tokenized_texts: List[List[str]]):
+    """Finds and prints the most and least significant words.
 
     Args:
-        crl (PycurlHelper): Instance of PycurlHelper to access ElasticSearch.
-        content (List): Contents of _content field in the ES database.
-        ids (List): content of the _id field in ES database.
-
-    Returns:
-        List: Similarity score along with the Corpus ID.
+        tokenized_texts (List[List[str]]): List containing list of tokens from each document
     """
-    cleaned_list = preprocess_data.clean_list(content)
-    tokenized_texts = preprocess_data.tokenize_content(cleaned_list)
+
     ## Okapi Implementation
-    # breakpoint()
-
-    (
-        nri_specific_important_words,
-        nri_specific_stop_words,
-    ) = get_special_and_stop_words(BM25Scorer, tokenized_texts=tokenized_texts)
-
-    # tf_nri_specific_important_words, tf_nri_specific_stop_words = get_special_and_stop_words(
-    #     TFIDFScorer, tokenized_texts=tokenized_texts
-    # )
-
-    print("Okapi important words", nri_specific_important_words)
-    print("Okapi stopwords", nri_specific_stop_words)
-
-    ## TFIDF implementation------------Needs refactoring
-    tinysegmenter_tokenizer = tinysegmenter.TinySegmenter()
-    stop_words = preprocess_data.get_stopwords()
-    tfidf_vectorizer = compute_tfidf_vectorizer(
-        stop_words, tinysegmenter_tokenizer
+    okapi_scorer = BM25Scorer(tokenized_texts)
+    okapi_important_words, okapi_stop_words = get_special_and_stop_words(
+        okapi_scorer
     )
-    tfidf_score = compute_tfidf_score(tfidf_vectorizer, cleaned_list)
-    tfidf_important_words = get_top_tfidf_tokens(tfidf_score, tfidf_vectorizer)
-    tfidf_stopwords = get_tfidf_stopwords(tfidf_score, tfidf_vectorizer)
+
+    print("Okapi important words", okapi_important_words)
+    print("Okapi stopwords", okapi_stop_words)
+
+    ## TFIDF implementation
+
+    tfidf_scorer = TFIDFScorer(tokenized_texts)
+    tfidf_important_words, tfidf_stopwords = get_special_and_stop_words(
+        tfidf_scorer
+    )
     print("TFIDF important words", tfidf_important_words)
     print("TFIDF stop words", tfidf_stopwords)
 
 
 if __name__ == "__main__":
-    INDEX_NAME = sys.argv[1]
-    crl = ElasticSearch(INDEX_NAME)
-    preprocess_data = PreprocessData(crl)
+    all_content = [
+        """
+            Media experts and journalists of South Asia have called for a systematic structural change in the media outlets of the region to break the bias and to accelerate women's equal participation in leadership roles.
+            """,
+        """
+            Priya (name changed) a single mother, returned home to Nepal with a child she had given birth to in United Arab Emirates, with the hopes of providing identity to her offspring who had been denied birth registration in the country of her child's birth.
+            """,
+        """ 
+            Two weeks into its war in Ukraine, Russia has achieved less and struggled more than anticipated at the outset of the biggest land conflict in Europe since World War II. But the invading force of more than 150,000 troops retains large and possibly decisive advantages in firepower as they bear down on key cities.
+            """,
+    ]
 
-    print("Retreving all data ...")
-    input_data = crl.get_required_data()
-    print("Preprocessing.....")
-    content, _, ids = preprocess_data.extract_data(input_data)
-    main(content)
-    # get_similar_docs(crl, content, ids)
+    data_preprocessor = PreprocessData()
+    cleaned_contents = data_preprocessor.clean_documents(all_content)
+
+    tokenized_contents = data_preprocessor.tokenize_documents(cleaned_contents)
+
+    main(tokenized_contents)
