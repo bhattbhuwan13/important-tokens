@@ -1,16 +1,18 @@
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from src.preprocess import PreprocessData
 from src.token_scorer import BM25Scorer, TFIDFScorer, TokenScorer
 
 
-def sort_tokens_by_score(tokens_with_score: Dict):
+def sort_tokens_by_score(tokens_with_score: Dict) -> List[str]:
     """Given a dictionary containing tokens and their score,
-    sorts the token in descending order of their score
 
     Args:
         tokens_with_score (Dict): Dictionary containing tokens as key
         and scores as value.
+
+    Returns:
+        List[str]:
     """
 
     sorted_token_score = sorted(
@@ -20,7 +22,7 @@ def sort_tokens_by_score(tokens_with_score: Dict):
     return sorted_tokens_list
 
 
-def compute_number_of_special_words(fraction: float, total_tokens: int):
+def compute_number_of_special_words(fraction: float, total_tokens: int) -> int:
     """Given a percentage as fraction, computes the number of special and stop words.
 
     Args:
@@ -30,11 +32,16 @@ def compute_number_of_special_words(fraction: float, total_tokens: int):
     return round(fraction * total_tokens)
 
 
-def get_special_and_stop_words(scorer: TokenScorer):
+def get_special_and_stop_words(
+    scorer: TokenScorer,
+) -> Tuple[List[str], List[str]]:
     """Computes the most and least significant words.
 
     Args:
         scorer (TokenScorer): The algorithm used for scoring the tokens.
+
+    Returns:
+        Tuple[List[str], List[str]]: List of most and least important words
     """
 
     token_scores = scorer.score_tokens()
