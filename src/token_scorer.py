@@ -7,11 +7,11 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 
 class TokenScorer(ABC):
     @abstractmethod
-    def __init__(self):
+    def __init__(self, tokenized_texts):
         pass
 
     @abstractmethod
-    def score_tokens(tokenized_texts):
+    def score_tokens(self):
         """Returns a dictionary containing tokens and their respective scores"""
         pass
 
