@@ -18,7 +18,6 @@ class TokenScorer(ABC):
 
 class BM25Scorer(TokenScorer):
     def __init__(self, tokenized_texts):
-        super().__init__(tokenized_texts)
         self.bm25 = BM25Okapi(tokenized_texts)
         return None
 
@@ -29,7 +28,6 @@ class BM25Scorer(TokenScorer):
 
 class TFIDFScorer(TokenScorer):
     def __init__(self, tokenized_texts):
-        super().__init__(tokenized_texts)
         self.tfidf_vectorizer = TfidfVectorizer(
             use_idf=True,
             max_df=0.5,
