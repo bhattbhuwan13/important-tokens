@@ -22,8 +22,7 @@ class BM25Scorer(TokenScorer):
         return None
 
     def score_tokens(self):
-        token_score = self.bm25.idf
-        return token_score
+        return self.bm25.idf
 
 
 class TFIDFScorer(TokenScorer):
@@ -44,5 +43,4 @@ class TFIDFScorer(TokenScorer):
             self.tfidf_vectorizer.get_feature_names_out()
         )
         tfidf_token_score = np.asarray(self.tf_idf_score.sum(axis=0)).ravel()
-        token_score = dict(zip(tfidf_feature_names, tfidf_token_score))
-        return token_score
+        return dict(zip(tfidf_feature_names, tfidf_token_score))

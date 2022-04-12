@@ -18,8 +18,7 @@ def sort_tokens_by_score(tokens_with_score: Dict) -> List[str]:
     sorted_token_score = sorted(
         tokens_with_score.items(), key=lambda item: item[1]
     )
-    sorted_tokens_list = [token for token, score in sorted_token_score]
-    return sorted_tokens_list
+    return [token for token, score in sorted_token_score]
 
 
 def compute_number_of_special_words(fraction: float, total_tokens: int) -> int:
